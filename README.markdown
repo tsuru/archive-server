@@ -1,5 +1,7 @@
 #archive-server
 
+[![Build Status](https://travis-ci.org/tsuru/archive-server.svg?branch=master)](https://travis-ci.org/tsuru/archive-server)
+
 archive-server is a daemon for serving git archives over HTTP. It contains two
 APIs: one that generates archives on demmand, and the other that serves the
 archives. Each archive is uniquely identified by a hash.
