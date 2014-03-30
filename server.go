@@ -13,3 +13,6 @@ var databaseAddr, databaseName string
 func conn() (*storage.Storage, error) {
 	return storage.Open(databaseAddr, databaseName)
 }
+
+func main() {
+}
