@@ -62,25 +62,11 @@ func NewArchive(path, refid, baseDir, prefix string) (*Archive, error) {
 	if err != nil {
 		return nil, err
 	}
-	go generate(archive, path, refid, archive.Path, prefix)
+	go archive.generate(path, refid, archive.Path, prefix)
 	return &archive, nil
 }
 
-func newID(path string) string {
-	var buf [32]byte
-	_, err := rand.Read(buf[:])
-	if err != nil {
-		return ""
-	}
-	nanoUnix := time.Now().UnixNano()
-	hash := sha512.New()
-	hash.Write(buf[:])
-	hash.Write([]byte(path))
-	hash.Write([]byte(fmt.Sprintf("%d", nanoUnix)))
-	return fmt.Sprintf("%x", hash.Sum(nil))
-}
-
-func generate(archive Archive, repositoryPath, refid, archivePath, prefix string) {
+func (archive Archive) generate(repositoryPath, refid, archivePath, prefix string) {
 	db, err := conn()
 	if err != nil {
 		return
@@ -104,4 +90,18 @@ func generate(archive Archive, repositoryPath, refid, archivePath, prefix string
 	archive.Log = buf.String()
 	update := bson.M{"$set": bson.M{"status": status, "log": archive.Log}}
 	db.Collection(collectionName).UpdateId(archive.ID, update)
+}
+
+func newID(path string) string {
+	var buf [32]byte
+	_, err := rand.Read(buf[:])
+	if err != nil {
+		return ""
+	}
+	nanoUnix := time.Now().UnixNano()
+	hash := sha512.New()
+	hash.Write(buf[:])
+	hash.Write([]byte(path))
+	hash.Write([]byte(fmt.Sprintf("%d", nanoUnix)))
+	return fmt.Sprintf("%x", hash.Sum(nil))
 }
