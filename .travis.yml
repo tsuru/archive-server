@@ -1,0 +1,12 @@
+language: go
+go:
+  - 1.1.2
+  - 1.2
+  - top
+install:
+  - go get
+  - go get github.com/tsuru/commandmocker launchpad.net/gocheck
+script:
+  - go test
+services:
+  - mongodb
