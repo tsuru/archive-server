@@ -39,11 +39,11 @@ func (Suite) TestNewArchive(c *gocheck.C) {
 	sess, err := conn()
 	c.Assert(err, gocheck.IsNil)
 	defer sess.Close()
-	defer sess.Collection("archives").RemoveId(archive.ID)
+	defer sess.Collection(collectionName).RemoveId(archive.ID)
 	c.Assert(archive.Status, gocheck.Equals, StatusBuilding)
 	c.Assert(archive.Path, gocheck.Equals, "/tmp/archive-server/"+archive.ID+".tar.gz")
 	wait(c, 3e9, func() bool {
-		count, err := sess.Collection("archives").Find(bson.M{"_id": archive.ID, "status": StatusReady}).Count()
+		count, err := sess.Collection(collectionName).Find(bson.M{"_id": archive.ID, "status": StatusReady}).Count()
 		return err == nil && count == 1
 	})
 	c.Assert(commandmocker.Ran(tmpdir), gocheck.Equals, true)
@@ -53,7 +53,7 @@ func (Suite) TestNewArchive(c *gocheck.C) {
 		"--prefix=sproject/", "e101294022323",
 	}
 	c.Assert(commandmocker.Parameters(tmpdir), gocheck.DeepEquals, expected)
-	err = sess.Collection("archives").FindId(archive.ID).One(&archive)
+	err = sess.Collection(collectionName).FindId(archive.ID).One(&archive)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(archive.Status, gocheck.Equals, StatusReady)
 	c.Assert(archive.Log, gocheck.Equals, "success")
@@ -69,13 +69,13 @@ func (Suite) TestNewArchiveFailure(c *gocheck.C) {
 	sess, err := conn()
 	c.Assert(err, gocheck.IsNil)
 	defer sess.Close()
-	defer sess.Collection("archives").RemoveId(archive.ID)
+	defer sess.Collection(collectionName).RemoveId(archive.ID)
 	wait(c, 3e9, func() bool {
-		count, err := sess.Collection("archives").Find(bson.M{"_id": archive.ID, "status": StatusError}).Count()
+		count, err := sess.Collection(collectionName).Find(bson.M{"_id": archive.ID, "status": StatusError}).Count()
 		return err == nil && count == 1
 	})
 	c.Assert(commandmocker.Ran(tmpdir), gocheck.Equals, true)
-	err = sess.Collection("archives").FindId(archive.ID).One(&archive)
+	err = sess.Collection(collectionName).FindId(archive.ID).One(&archive)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(archive.Status, gocheck.Equals, StatusError)
 	c.Assert(archive.Log, gocheck.Equals, "failed to generate file")

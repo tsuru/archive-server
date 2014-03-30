@@ -17,6 +17,8 @@ import (
 	"labix.org/v2/mgo/bson"
 )
 
+const collectionName = "archives"
+
 const (
 	StatusBuilding Status = iota
 	StatusReady
@@ -56,7 +58,7 @@ func NewArchive(path, refid, baseDir, prefix string) (*Archive, error) {
 		return nil, err
 	}
 	defer db.Close()
-	err = db.Collection("archives").Insert(archive)
+	err = db.Collection(collectionName).Insert(archive)
 	if err != nil {
 		return nil, err
 	}
@@ -101,5 +103,5 @@ func generate(archive Archive, repositoryPath, refid, archivePath, prefix string
 	}
 	archive.Log = buf.String()
 	update := bson.M{"$set": bson.M{"status": status, "log": archive.Log}}
-	db.Collection("archives").UpdateId(archive.ID, update)
+	db.Collection(collectionName).UpdateId(archive.ID, update)
 }
