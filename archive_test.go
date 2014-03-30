@@ -5,6 +5,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"time"
 
@@ -21,6 +22,7 @@ func (Suite) TestStatus(c *gocheck.C) {
 		{StatusBuilding, "building"},
 		{StatusReady, "ready"},
 		{StatusError, "error"},
+		{StatusDestroyed, "destroyed"},
 		{Status(6), "unknown"},
 	}
 	for _, t := range tests {
@@ -97,6 +99,34 @@ func (Suite) TestGetArchive(c *gocheck.C) {
 func (Suite) TestGetArchiveNotFound(c *gocheck.C) {
 	archive, err := GetArchive("wat")
 	c.Assert(archive, gocheck.IsNil)
+	c.Assert(err, gocheck.Equals, ErrArchiveNotFound)
+}
+
+func (Suite) TestDestroyArchive(c *gocheck.C) {
+	tmpdir := os.TempDir()
+	path := filepath.Join(tmpdir, "some-temp-file.txt")
+	file, err := os.Create(path)
+	c.Assert(err, gocheck.IsNil)
+	file.Close()
+	defer os.Remove(path)
+	id := "some interesting id"
+	archive := Archive{ID: id, Path: path, Status: StatusReady}
+	sess, err := conn()
+	c.Assert(err, gocheck.IsNil)
+	defer sess.Close()
+	sess.Collection(collectionName).Insert(archive)
+	defer sess.Collection(collectionName).RemoveId(archive.ID)
+	err = DestroyArchive(archive.ID)
+	c.Assert(err, gocheck.IsNil)
+	_, err = os.Stat(path)
+	c.Assert(os.IsNotExist(err), gocheck.Equals, true)
+	err = sess.Collection(collectionName).FindId(archive.ID).One(&archive)
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(archive.Status, gocheck.Equals, StatusDestroyed)
+}
+
+func (Suite) TestDestroyArchiveNotFound(c *gocheck.C) {
+	err := DestroyArchive("waaat")
 	c.Assert(err, gocheck.Equals, ErrArchiveNotFound)
 }
 

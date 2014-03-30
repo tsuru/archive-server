@@ -10,6 +10,7 @@ import (
 	"crypto/sha512"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -30,6 +31,9 @@ const (
 
 	// StatusError indicates that the archive failed to build.
 	StatusError
+
+	// StatusDestroyed indicates that the archive has been destroyed.
+	StatusDestroyed
 )
 
 // Error returned when an archive does not exist.
@@ -47,6 +51,8 @@ func (s Status) String() string {
 		return "ready"
 	case StatusError:
 		return "error"
+	case StatusDestroyed:
+		return "destroyed"
 	default:
 		return "unknown"
 	}
@@ -134,4 +140,24 @@ func GetArchive(id string) (*Archive, error) {
 		return nil, ErrArchiveNotFound
 	}
 	return &archive, nil
+}
+
+// DestroyArchive removes an archive by its ID.
+func DestroyArchive(id string) error {
+	archive, err := GetArchive(id)
+	if err != nil {
+		return err
+	}
+	db, err := conn()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	update := bson.M{"$set": bson.M{"status": StatusDestroyed}}
+	err = db.Collection(collectionName).UpdateId(id, update)
+	if err != nil {
+		return err
+	}
+	os.Remove(archive.Path)
+	return nil
 }
