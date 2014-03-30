@@ -81,6 +81,25 @@ func (Suite) TestNewArchiveFailure(c *gocheck.C) {
 	c.Assert(archive.Log, gocheck.Equals, "failed to generate file")
 }
 
+func (Suite) TestGetArchive(c *gocheck.C) {
+	id := "some interesting id"
+	archive := Archive{ID: id, Path: "/tmp/archive.tar.gz", Status: StatusBuilding}
+	sess, err := conn()
+	c.Assert(err, gocheck.IsNil)
+	defer sess.Close()
+	sess.Collection(collectionName).Insert(archive)
+	defer sess.Collection(collectionName).RemoveId(archive.ID)
+	gotArchive, err := GetArchive(archive.ID)
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(*gotArchive, gocheck.DeepEquals, archive)
+}
+
+func (Suite) TestGetArchiveNotFound(c *gocheck.C) {
+	archive, err := GetArchive("wat")
+	c.Assert(archive, gocheck.IsNil)
+	c.Assert(err, gocheck.Equals, ErrArchiveNotFound)
+}
+
 func wait(c *gocheck.C, timeout time.Duration, fn func() bool) {
 	done := make(chan int)
 	quit := make(chan int)

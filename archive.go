@@ -8,25 +8,37 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha512"
+	"errors"
 	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 )
 
 const collectionName = "archives"
 
 const (
+	// StatusBuilding indicates that the server is building the archive.
 	StatusBuilding Status = iota
+
+	// StatusReady indicates that the archive is ready.
 	StatusReady
+
+	// StatusError indicates that the archive failed to build.
 	StatusError
 )
 
+// Error returned when an archive does not exist.
+var ErrArchiveNotFound = errors.New("archive not found")
+
+// Status represents the current status of the archive.
 type Status byte
 
+// String returns the string representation of the status.
 func (s Status) String() string {
 	switch s {
 	case StatusBuilding:
@@ -40,6 +52,7 @@ func (s Status) String() string {
 	}
 }
 
+// Archive represents a git archive.
 type Archive struct {
 	ID     string `bson:"_id"`
 	Path   string
@@ -47,6 +60,8 @@ type Archive struct {
 	Log    string
 }
 
+// NewArchive inserts a new archive in the database and starts the generation
+// of the actual archive in background.
 func NewArchive(path, refid, baseDir, prefix string) (*Archive, error) {
 	archive := Archive{
 		ID:     newID(path),
@@ -104,4 +119,19 @@ func newID(path string) string {
 	hash.Write([]byte(path))
 	hash.Write([]byte(fmt.Sprintf("%d", nanoUnix)))
 	return fmt.Sprintf("%x", hash.Sum(nil))
+}
+
+// GetArchive returns an archive by its ID.
+func GetArchive(id string) (*Archive, error) {
+	db, err := conn()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+	var archive Archive
+	err = db.Collection(collectionName).FindId(id).One(&archive)
+	if err == mgo.ErrNotFound {
+		return nil, ErrArchiveNotFound
+	}
+	return &archive, nil
 }
