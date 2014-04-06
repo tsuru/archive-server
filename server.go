@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/globocom/tsuru/db/storage"
+	"github.com/tsuru/tsuru/db/storage"
 )
 
 var (
