@@ -110,7 +110,14 @@ func (Suite) TestDestroyArchive(c *gocheck.C) {
 	file.Close()
 	defer os.Remove(path)
 	id := "some interesting id"
-	archive := Archive{ID: id, Path: path, Status: StatusReady}
+	t := time.Now()
+	archive := Archive{
+		ID:        id,
+		Path:      path,
+		Status:    StatusReady,
+		CreatedAt: t,
+		UpdatedAt: t,
+	}
 	sess, err := conn()
 	c.Assert(err, gocheck.IsNil)
 	defer sess.Close()
@@ -123,6 +130,7 @@ func (Suite) TestDestroyArchive(c *gocheck.C) {
 	err = sess.Collection(collectionName).FindId(archive.ID).One(&archive)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(archive.Status, gocheck.Equals, StatusDestroyed)
+	c.Assert(archive.UpdatedAt, gocheck.Not(gocheck.DeepEquals), t)
 }
 
 func (Suite) TestDestroyArchiveNotFound(c *gocheck.C) {

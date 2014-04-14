@@ -59,18 +59,23 @@ func (s Status) String() string {
 
 // Archive represents a git archive.
 type Archive struct {
-	ID     string `bson:"_id"`
-	Path   string
-	Status Status
-	Log    string
+	ID        string `bson:"_id"`
+	Path      string
+	Status    Status
+	Log       string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // NewArchive inserts a new archive in the database and starts the generation
 // of the actual archive in background.
 func NewArchive(path, refid, baseDir, prefix string) (*Archive, error) {
+	now := time.Now()
 	archive := Archive{
-		ID:     newID(path),
-		Status: StatusBuilding,
+		ID:        newID(path),
+		Status:    StatusBuilding,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 	archive.Path = filepath.Join(baseDir, archive.ID+".tar.gz")
 	db, err := conn()
@@ -108,7 +113,7 @@ func (archive Archive) generate(repositoryPath, refid, archivePath, prefix strin
 		status = StatusError
 	}
 	archive.Log = buf.String()
-	update := bson.M{"$set": bson.M{"status": status, "log": archive.Log}}
+	update := bson.M{"$set": bson.M{"status": status, "log": archive.Log, "updatedat": time.Now()}}
 	db.Collection(collectionName).UpdateId(archive.ID, update)
 }
 
@@ -152,7 +157,7 @@ func DestroyArchive(id string) error {
 		return err
 	}
 	defer db.Close()
-	update := bson.M{"$set": bson.M{"status": StatusDestroyed}}
+	update := bson.M{"$set": bson.M{"status": StatusDestroyed, "updatedat": time.Now()}}
 	err = db.Collection(collectionName).UpdateId(id, update)
 	if err != nil {
 		return err
