@@ -10,14 +10,13 @@ import (
 	"crypto/sha512"
 	"errors"
 	"fmt"
+	"labix.org/v2/mgo"
+	"labix.org/v2/mgo/bson"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"labix.org/v2/mgo"
-	"labix.org/v2/mgo/bson"
 )
 
 const collectionName = "archives"
