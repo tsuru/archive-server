@@ -138,6 +138,20 @@ func (Suite) TestDestroyArchiveNotFound(c *gocheck.C) {
 	c.Assert(err, gocheck.Equals, ErrArchiveNotFound)
 }
 
+func (Suite) TestDestroyArchiveDBError(c *gocheck.C) {
+	archive := Archive{ID: "hello hello"}
+	sess, err := conn()
+	c.Assert(err, gocheck.IsNil)
+	defer sess.Close()
+	sess.Collection(collectionName).Insert(archive)
+	defer sess.Collection(collectionName).RemoveId(archive.ID)
+	oldDbAddr := databaseAddr
+	databaseAddr = "256.256.256.256:27017"
+	defer func() { databaseAddr = oldDbAddr }()
+	err = DestroyArchive(archive.ID)
+	c.Assert(err, gocheck.NotNil)
+}
+
 func wait(c *gocheck.C, timeout time.Duration, fn func() bool) {
 	done := make(chan int)
 	quit := make(chan int)
