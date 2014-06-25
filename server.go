@@ -15,12 +15,15 @@ import (
 	"sync"
 )
 
+const version = "0.1.0"
+
 var (
 	databaseAddr string
 	databaseName string
 	baseDir      string
 	readHttp     string
 	writeHttp    string
+	checkVersion bool
 )
 
 func init() {
@@ -29,6 +32,7 @@ func init() {
 	flag.StringVar(&baseDir, "dir", "/var/lib/archives/", "Base directory, where the server will create and serve the archives")
 	flag.StringVar(&readHttp, "read-http", "", "Address to bind the API that serves archives. Omit to not start this API.")
 	flag.StringVar(&writeHttp, "write-http", "", "Address to bind the API that creates archives. Omit to not start this API.")
+	flag.BoolVar(&checkVersion, "version", false, "Print version and exit")
 }
 
 func conn() (*storage.Storage, error) {
@@ -101,6 +105,10 @@ func serve(w http.ResponseWriter, archive *Archive, keep bool) {
 
 func main() {
 	flag.Parse()
+	if checkVersion {
+		fmt.Printf("archive-server version %s\n", version)
+		os.Exit(0)
+	}
 	if readHttp == "" && writeHttp == "" {
 		fmt.Println("You need to specify at-least one of -read-http and -write-http")
 		os.Exit(1)
