@@ -5,13 +5,12 @@
 package main
 
 import (
+	"github.com/tsuru/commandmocker"
+	"gopkg.in/mgo.v2/bson"
+	"launchpad.net/gocheck"
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/tsuru/commandmocker"
-	"labix.org/v2/mgo/bson"
-	"launchpad.net/gocheck"
 )
 
 func (Suite) TestStatus(c *gocheck.C) {
