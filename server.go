@@ -31,7 +31,6 @@ var (
 )
 
 func init() {
-	log.SetPrefix("archive-server")
 	flag.StringVar(&databaseAddr, "mongodb", "127.0.0.1:27017", "Address of the database server")
 	flag.StringVar(&databaseName, "dbname", "archives", "Name of the database to store information about archives")
 	flag.StringVar(&baseDir, "dir", "/var/lib/archives/", "Base directory, where the server will create and serve the archives")
