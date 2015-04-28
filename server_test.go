@@ -1,4 +1,4 @@
-// Copyright 2014 Globo.com. All rights reserved.
+// Copyright 2015 Globo.com. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -9,94 +9,95 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"launchpad.net/gocheck"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"gopkg.in/check.v1"
 )
 
 type Suite struct{}
 
-var _ = gocheck.Suite(Suite{})
+var _ = check.Suite(Suite{})
 
 func Test(t *testing.T) {
-	gocheck.TestingT(t)
+	check.TestingT(t)
 }
 
-func (Suite) SetUpSuite(c *gocheck.C) {
+func (Suite) SetUpSuite(c *check.C) {
 	databaseAddr = "127.0.0.1:27017"
 	databaseName = "archive_server_test"
 	baseDir = "/tmp/archive-server-tests"
 	os.MkdirAll(baseDir, 0755)
 }
 
-func (Suite) TearDownSuite(c *gocheck.C) {
+func (Suite) TearDownSuite(c *check.C) {
 	sess, err := conn()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	sess.Collection("something").Database.DropDatabase()
 	os.RemoveAll(baseDir)
 }
 
-func (Suite) TestConn(c *gocheck.C) {
+func (Suite) TestConn(c *check.C) {
 	sess, err := conn()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	defer sess.Close()
 	err = sess.Collection("something").Database.Session.Ping()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (Suite) TestCreateArchiveHandler(c *gocheck.C) {
+func (Suite) TestCreateArchiveHandler(c *check.C) {
 	path, _ := filepath.Abs("testdata/test.git")
 	body := fmt.Sprintf("path=%s&refid=e101294022323&prefix=sproject", path)
 	request, err := http.NewRequest("POST", "/", strings.NewReader(body))
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	recorder := httptest.NewRecorder()
 	createArchiveHandler(recorder, request)
 	var m map[string]string
 	err = json.NewDecoder(recorder.Body).Decode(&m)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	_, err = GetArchive(m["id"])
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (Suite) TestCreateArchiveHandlerMissingParams(c *gocheck.C) {
+func (Suite) TestCreateArchiveHandlerMissingParams(c *check.C) {
 	path, _ := filepath.Abs("testdata/test.git")
 	body := fmt.Sprintf("path=%s&prefix=sproject", path)
 	request, err := http.NewRequest("POST", "/", strings.NewReader(body))
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	recorder := httptest.NewRecorder()
 	createArchiveHandler(recorder, request)
-	c.Assert(recorder.Code, gocheck.Equals, http.StatusBadRequest)
-	c.Assert(recorder.Body.String(), gocheck.Equals, "path and refid are required\n")
+	c.Assert(recorder.Code, check.Equals, http.StatusBadRequest)
+	c.Assert(recorder.Body.String(), check.Equals, "path and refid are required\n")
 }
 
-func (Suite) TestCreateArchiveHandlerArchiveFailure(c *gocheck.C) {
+func (Suite) TestCreateArchiveHandlerArchiveFailure(c *check.C) {
 	oldDbAddr := databaseAddr
 	databaseAddr = "256.256.256.256:27017"
 	defer func() { databaseAddr = oldDbAddr }()
 	path, _ := filepath.Abs("testdata/test.git")
 	body := fmt.Sprintf("path=%s&refid=e101294022323&prefix=sproject", path)
 	request, err := http.NewRequest("POST", "/", strings.NewReader(body))
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	recorder := httptest.NewRecorder()
 	createArchiveHandler(recorder, request)
-	c.Assert(recorder.Code, gocheck.Equals, http.StatusInternalServerError)
+	c.Assert(recorder.Code, check.Equals, http.StatusInternalServerError)
 }
 
-func (Suite) TestReadArchiveHandlerStatusReady(c *gocheck.C) {
+func (Suite) TestReadArchiveHandlerStatusReady(c *check.C) {
 	var buf bytes.Buffer
 	testFilePath := "/tmp/archive.tar.gz"
 	defer os.Remove(testFilePath)
 	dst, err := os.Create(testFilePath)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	src, err := os.Open("testdata/test.tar.gz")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	io.Copy(dst, src)
 	dst.Close()
 	src.Seek(0, 0)
@@ -105,24 +106,24 @@ func (Suite) TestReadArchiveHandlerStatusReady(c *gocheck.C) {
 	id := "some interesting id"
 	archive := Archive{ID: id, Path: testFilePath, Status: StatusReady}
 	sess, err := conn()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	defer sess.Close()
 	sess.Collection(collectionName).Insert(archive)
 	defer sess.Collection(collectionName).RemoveId(archive.ID)
 	request, err := http.NewRequest("GET", "/?id="+id, nil)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	recorder := httptest.NewRecorder()
 	readArchiveHandler(recorder, request)
-	c.Assert(recorder.Code, gocheck.Equals, http.StatusOK)
-	c.Assert(recorder.Body.Bytes(), gocheck.DeepEquals, buf.Bytes())
+	c.Assert(recorder.Code, check.Equals, http.StatusOK)
+	c.Assert(recorder.Body.Bytes(), check.DeepEquals, buf.Bytes())
 	err = sess.Collection(collectionName).FindId(id).One(&archive)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(archive.Status, gocheck.Equals, StatusDestroyed)
+	c.Assert(err, check.IsNil)
+	c.Assert(archive.Status, check.Equals, StatusDestroyed)
 	_, err = os.Stat(testFilePath)
-	c.Assert(os.IsNotExist(err), gocheck.Equals, true)
+	c.Assert(os.IsNotExist(err), check.Equals, true)
 }
 
-func (Suite) TestReadArchiveHandlerStatusReadyFileNotfound(c *gocheck.C) {
+func (Suite) TestReadArchiveHandlerStatusReadyFileNotfound(c *check.C) {
 	id := "some interesting id"
 	archive := Archive{
 		ID:     id,
@@ -130,27 +131,27 @@ func (Suite) TestReadArchiveHandlerStatusReadyFileNotfound(c *gocheck.C) {
 		Status: StatusReady,
 	}
 	sess, err := conn()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	defer sess.Close()
 	sess.Collection(collectionName).Insert(archive)
 	defer sess.Collection(collectionName).RemoveId(archive.ID)
 	request, err := http.NewRequest("GET", "/?id="+id, nil)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	recorder := httptest.NewRecorder()
 	readArchiveHandler(recorder, request)
-	c.Assert(recorder.Code, gocheck.Equals, http.StatusInternalServerError)
+	c.Assert(recorder.Code, check.Equals, http.StatusInternalServerError)
 	expectedErr := "open /tmp/file-that-doesnt-exist-29192.tar.gz: no such file or directory\n"
-	c.Assert(recorder.Body.String(), gocheck.Equals, expectedErr)
+	c.Assert(recorder.Body.String(), check.Equals, expectedErr)
 }
 
-func (Suite) TestReadArchiveHandlerStatusReadyKeep(c *gocheck.C) {
+func (Suite) TestReadArchiveHandlerStatusReadyKeep(c *check.C) {
 	var buf bytes.Buffer
 	testFilePath := "/tmp/archive.tar.gz"
 	defer os.Remove(testFilePath)
 	dst, err := os.Create(testFilePath)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	src, err := os.Open("testdata/test.tar.gz")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	io.Copy(dst, src)
 	dst.Close()
 	src.Seek(0, 0)
@@ -159,56 +160,56 @@ func (Suite) TestReadArchiveHandlerStatusReadyKeep(c *gocheck.C) {
 	id := "some interesting id"
 	archive := Archive{ID: id, Path: testFilePath, Status: StatusReady}
 	sess, err := conn()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	defer sess.Close()
 	sess.Collection(collectionName).Insert(archive)
 	defer sess.Collection(collectionName).RemoveId(archive.ID)
 	request, err := http.NewRequest("GET", "/?keep=1&id="+id, nil)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	recorder := httptest.NewRecorder()
 	readArchiveHandler(recorder, request)
-	c.Assert(recorder.Code, gocheck.Equals, http.StatusOK)
-	c.Assert(recorder.Body.Bytes(), gocheck.DeepEquals, buf.Bytes())
+	c.Assert(recorder.Code, check.Equals, http.StatusOK)
+	c.Assert(recorder.Body.Bytes(), check.DeepEquals, buf.Bytes())
 	err = sess.Collection(collectionName).FindId(id).One(&archive)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(archive.Status, gocheck.Equals, StatusReady)
+	c.Assert(err, check.IsNil)
+	c.Assert(archive.Status, check.Equals, StatusReady)
 	_, err = os.Stat(testFilePath)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (Suite) TestReadArchiveHandlerStatusDestroyed(c *gocheck.C) {
+func (Suite) TestReadArchiveHandlerStatusDestroyed(c *check.C) {
 	id := "some interesting id"
 	archive := Archive{ID: id, Path: "/tmp/file.tar.gz", Status: StatusDestroyed}
 	sess, err := conn()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	defer sess.Close()
 	sess.Collection(collectionName).Insert(archive)
 	defer sess.Collection(collectionName).RemoveId(archive.ID)
 	request, err := http.NewRequest("GET", "/?id="+id, nil)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	recorder := httptest.NewRecorder()
 	readArchiveHandler(recorder, request)
-	c.Assert(recorder.Code, gocheck.Equals, http.StatusNotFound)
-	c.Assert(recorder.Body.String(), gocheck.Equals, ErrArchiveNotFound.Error()+"\n")
+	c.Assert(recorder.Code, check.Equals, http.StatusNotFound)
+	c.Assert(recorder.Body.String(), check.Equals, ErrArchiveNotFound.Error()+"\n")
 }
 
-func (Suite) TestReadArchiveHandlerStatusBuilding(c *gocheck.C) {
+func (Suite) TestReadArchiveHandlerStatusBuilding(c *check.C) {
 	id := "some interesting id"
 	archive := Archive{ID: id, Path: "/tmp/file.tar.gz", Status: StatusBuilding}
 	sess, err := conn()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	defer sess.Close()
 	sess.Collection(collectionName).Insert(archive)
 	defer sess.Collection(collectionName).RemoveId(archive.ID)
 	request, err := http.NewRequest("GET", "/?id="+id, nil)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	recorder := httptest.NewRecorder()
 	readArchiveHandler(recorder, request)
-	c.Assert(recorder.Code, gocheck.Equals, http.StatusOK)
-	c.Assert(recorder.Body.String(), gocheck.Equals, "BUILDING\n")
+	c.Assert(recorder.Code, check.Equals, http.StatusOK)
+	c.Assert(recorder.Body.String(), check.Equals, "BUILDING\n")
 }
 
-func (Suite) TestReadArchiveHandlerStatusError(c *gocheck.C) {
+func (Suite) TestReadArchiveHandlerStatusError(c *check.C) {
 	id := "some interesting id"
 	archive := Archive{
 		ID:     id,
@@ -217,59 +218,59 @@ func (Suite) TestReadArchiveHandlerStatusError(c *gocheck.C) {
 		Log:    "something went wrong",
 	}
 	sess, err := conn()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	defer sess.Close()
 	sess.Collection(collectionName).Insert(archive)
 	defer sess.Collection(collectionName).RemoveId(archive.ID)
 	request, err := http.NewRequest("GET", "/?id="+id, nil)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	recorder := httptest.NewRecorder()
 	readArchiveHandler(recorder, request)
-	c.Assert(recorder.Code, gocheck.Equals, http.StatusInternalServerError)
-	c.Assert(recorder.Body.String(), gocheck.Equals, "something went wrong\n")
+	c.Assert(recorder.Code, check.Equals, http.StatusInternalServerError)
+	c.Assert(recorder.Body.String(), check.Equals, "something went wrong\n")
 }
 
-func (Suite) TestReadArchiveHandlerUnknownStatus(c *gocheck.C) {
+func (Suite) TestReadArchiveHandlerUnknownStatus(c *check.C) {
 	id := "some interesting id"
 	archive := Archive{ID: id, Path: "/tmp/file.tar.gz", Status: 7}
 	sess, err := conn()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	defer sess.Close()
 	sess.Collection(collectionName).Insert(archive)
 	defer sess.Collection(collectionName).RemoveId(archive.ID)
 	request, err := http.NewRequest("GET", "/?id="+id, nil)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	recorder := httptest.NewRecorder()
 	readArchiveHandler(recorder, request)
-	c.Assert(recorder.Code, gocheck.Equals, http.StatusInternalServerError)
-	c.Assert(recorder.Body.String(), gocheck.Equals, "unknown error\n")
+	c.Assert(recorder.Code, check.Equals, http.StatusInternalServerError)
+	c.Assert(recorder.Body.String(), check.Equals, "unknown error\n")
 }
 
-func (Suite) TestReadArchiveHandlerMissingID(c *gocheck.C) {
+func (Suite) TestReadArchiveHandlerMissingID(c *check.C) {
 	request, err := http.NewRequest("GET", "/", nil)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	recorder := httptest.NewRecorder()
 	readArchiveHandler(recorder, request)
-	c.Assert(recorder.Code, gocheck.Equals, http.StatusBadRequest)
-	c.Assert(recorder.Body.String(), gocheck.Equals, "missing archive id\n")
+	c.Assert(recorder.Code, check.Equals, http.StatusBadRequest)
+	c.Assert(recorder.Body.String(), check.Equals, "missing archive id\n")
 }
 
-func (Suite) TestReadArchiveHandlerNotFound(c *gocheck.C) {
+func (Suite) TestReadArchiveHandlerNotFound(c *check.C) {
 	request, err := http.NewRequest("GET", "/?id=somethingnotfound", nil)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	recorder := httptest.NewRecorder()
 	readArchiveHandler(recorder, request)
-	c.Assert(recorder.Code, gocheck.Equals, http.StatusNotFound)
-	c.Assert(recorder.Body.String(), gocheck.Equals, ErrArchiveNotFound.Error()+"\n")
+	c.Assert(recorder.Code, check.Equals, http.StatusNotFound)
+	c.Assert(recorder.Body.String(), check.Equals, ErrArchiveNotFound.Error()+"\n")
 }
 
-func (Suite) TestReadArchiveHandlerDBFailure(c *gocheck.C) {
+func (Suite) TestReadArchiveHandlerDBFailure(c *check.C) {
 	oldDbAddr := databaseAddr
 	databaseAddr = "256.256.256.256:27017"
 	defer func() { databaseAddr = oldDbAddr }()
 	request, err := http.NewRequest("GET", "/?id=somethingnotfound", nil)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	recorder := httptest.NewRecorder()
 	readArchiveHandler(recorder, request)
-	c.Assert(recorder.Code, gocheck.Equals, http.StatusInternalServerError)
+	c.Assert(recorder.Code, check.Equals, http.StatusInternalServerError)
 }

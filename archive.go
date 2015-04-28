@@ -10,13 +10,14 @@ import (
 	"crypto/sha512"
 	"errors"
 	"fmt"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 const collectionName = "archives"

@@ -1,4 +1,4 @@
-// Copyright 2014 Globo.com. All rights reserved.
+// Copyright 2015 Globo.com. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -8,11 +8,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/tsuru/tsuru/db/storage"
 	"io"
 	"net/http"
 	"os"
 	"sync"
+
+	"github.com/tsuru/tsuru/db/storage"
 )
 
 const version = "0.1.1"
