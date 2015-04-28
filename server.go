@@ -96,7 +96,12 @@ func readArchiveHandler(w http.ResponseWriter, r *http.Request) {
 
 func serve(w http.ResponseWriter, archive *Archive, keep bool) {
 	if !keep {
-		defer DestroyArchive(archive.ID)
+		defer func() {
+			err := DestroyArchive(archive.ID)
+			if err != nil {
+				log.Printf("[ERROR] Failed to destroy archive %q: %s", archive.ID, err)
+			}
+		}()
 	}
 	file, err := os.Open(archive.Path)
 	if err != nil {
@@ -122,7 +127,7 @@ func main() {
 	wg.Add(2)
 	if writeHttp != "" {
 		go func() {
-			log.Printf("starting write server at %q", writeHttp)
+			log.Printf("[INFO] Starting write server at %q", writeHttp)
 			srv := graceful.Server{
 				Timeout: 10 * time.Minute,
 				Server: &http.Server{
@@ -136,7 +141,7 @@ func main() {
 	}
 	if readHttp != "" {
 		go func() {
-			log.Printf("starting read server at %q", readHttp)
+			log.Printf("[INFO] Starting read server at %q", readHttp)
 			srv := graceful.Server{
 				Timeout: 10 * time.Minute,
 				Server: &http.Server{

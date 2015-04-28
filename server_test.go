@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -32,6 +34,7 @@ func (Suite) SetUpSuite(c *check.C) {
 	databaseName = "archive_server_test"
 	baseDir = "/tmp/archive-server-tests"
 	os.MkdirAll(baseDir, 0755)
+	log.SetOutput(ioutil.Discard)
 }
 
 func (Suite) TearDownSuite(c *check.C) {

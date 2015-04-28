@@ -10,6 +10,7 @@ import (
 	"crypto/sha512"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -78,6 +79,7 @@ func NewArchive(path, refid, baseDir, prefix string) (*Archive, error) {
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
+	log.Printf("[INFO] Generating archive %q for the path %q at reference %q", archive.ID, path, refid)
 	archive.Path = filepath.Join(baseDir, archive.ID+".tar.gz")
 	db, err := conn()
 	if err != nil {
@@ -114,6 +116,7 @@ func (archive Archive) generate(repositoryPath, refid, archivePath, prefix strin
 		status = StatusError
 	}
 	archive.Log = buf.String()
+	log.Printf("[ERROR] Failed to generate archive %q: %s", archive.ID, archive.Log)
 	update := bson.M{"$set": bson.M{"status": status, "log": archive.Log, "updatedat": time.Now()}}
 	db.Collection(collectionName).UpdateId(archive.ID, update)
 }
@@ -163,6 +166,5 @@ func DestroyArchive(id string) error {
 	if err != nil {
 		return err
 	}
-	os.Remove(archive.Path)
-	return nil
+	return os.Remove(archive.Path)
 }
