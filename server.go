@@ -12,8 +12,10 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/tsuru/tsuru/db/storage"
+	"gopkg.in/tylerb/graceful.v1"
 )
 
 const version = "0.1.1"
@@ -118,13 +120,27 @@ func main() {
 	wg.Add(2)
 	if writeHttp != "" {
 		go func() {
-			http.ListenAndServe(writeHttp, http.HandlerFunc(createArchiveHandler))
+			srv := graceful.Server{
+				Timeout: 10 * time.Minute,
+				Server: &http.Server{
+					Addr:    writeHttp,
+					Handler: http.HandlerFunc(createArchiveHandler),
+				},
+			}
+			srv.ListenAndServe()
 			wg.Done()
 		}()
 	}
 	if readHttp != "" {
 		go func() {
-			http.ListenAndServe(readHttp, http.HandlerFunc(readArchiveHandler))
+			srv := graceful.Server{
+				Timeout: 10 * time.Minute,
+				Server: &http.Server{
+					Addr:    readHttp,
+					Handler: http.HandlerFunc(readArchiveHandler),
+				},
+			}
+			srv.ListenAndServe()
 			wg.Done()
 		}()
 	}
