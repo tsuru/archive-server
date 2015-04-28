@@ -114,9 +114,9 @@ func (archive Archive) generate(repositoryPath, refid, archivePath, prefix strin
 	command.Stderr = &buf
 	if err := command.Run(); err != nil {
 		status = StatusError
+		log.Printf("[ERROR] Failed to generate archive %q: %s", archive.ID, buf.String())
 	}
 	archive.Log = buf.String()
-	log.Printf("[ERROR] Failed to generate archive %q: %s", archive.ID, archive.Log)
 	update := bson.M{"$set": bson.M{"status": status, "log": archive.Log, "updatedat": time.Now()}}
 	db.Collection(collectionName).UpdateId(archive.ID, update)
 }
