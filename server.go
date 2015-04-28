@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"sync"
@@ -30,6 +31,7 @@ var (
 )
 
 func init() {
+	log.SetPrefix("archive-server")
 	flag.StringVar(&databaseAddr, "mongodb", "127.0.0.1:27017", "Address of the database server")
 	flag.StringVar(&databaseName, "dbname", "archives", "Name of the database to store information about archives")
 	flag.StringVar(&baseDir, "dir", "/var/lib/archives/", "Base directory, where the server will create and serve the archives")
@@ -120,6 +122,7 @@ func main() {
 	wg.Add(2)
 	if writeHttp != "" {
 		go func() {
+			log.Printf("starting write server at %q", writeHttp)
 			srv := graceful.Server{
 				Timeout: 10 * time.Minute,
 				Server: &http.Server{
@@ -133,6 +136,7 @@ func main() {
 	}
 	if readHttp != "" {
 		go func() {
+			log.Printf("starting read server at %q", readHttp)
 			srv := graceful.Server{
 				Timeout: 10 * time.Minute,
 				Server: &http.Server{
