@@ -6,7 +6,7 @@ go:
   - tip
 install:
   - go get -x -d
-  - go get -x -d github.com/tsuru/commandmocker launchpad.net/gocheck
+  - go get -x -d github.com/tsuru/commandmocker gopkg.in/check.v1
 script:
   - go test -x
 services:
