@@ -3,6 +3,8 @@ sudo: false
 go:
   - 1.4
   - tip
+before_install:
+  - sed -ie 's,git://,https://,' .git/config
 install:
   - go get -x -d -t -u -f
 script:
