@@ -1,10 +1,10 @@
 language: go
+sudo: false
 go:
   - 1.4
   - tip
 install:
-  - go get -x -d
-  - go get -x -d github.com/tsuru/commandmocker gopkg.in/check.v1
+  - go get -x -d -t -u -f
 script:
   - go test -x
 services:
