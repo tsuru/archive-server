@@ -44,14 +44,16 @@ func conn() (*storage.Storage, error) {
 }
 
 func createArchiveHandler(w http.ResponseWriter, r *http.Request) {
-	path := r.FormValue("path")
-	refid := r.FormValue("refid")
-	prefix := r.FormValue("prefix")
-	if path == "" || refid == "" {
-		http.Error(w, "path and refid are required", http.StatusBadRequest)
+	archiveFile, header, err := r.FormFile("archive")
+	if err != nil {
+		http.Error(w, "missing archive file", http.StatusBadRequest)
 		return
 	}
-	archive, err := NewArchive(path, refid, baseDir, prefix)
+	if archiveFile == nil {
+		http.Error(w, "archive file is required", http.StatusBadRequest)
+		return
+	}
+	archive, err := NewArchive(archiveFile, header.Filename, baseDir)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

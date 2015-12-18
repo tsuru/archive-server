@@ -7,14 +7,13 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -53,11 +52,15 @@ func (Suite) TestConn(c *check.C) {
 }
 
 func (Suite) TestCreateArchiveHandler(c *check.C) {
-	path, _ := filepath.Abs("testdata/test.git")
-	body := fmt.Sprintf("path=%s&refid=e101294022323&prefix=sproject", path)
-	request, err := http.NewRequest("POST", "/", strings.NewReader(body))
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	file, err := writer.CreateFormFile("archive", "app_commit_uuid.tar.gz")
 	c.Assert(err, check.IsNil)
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	file.Write([]byte("hello world!"))
+	writer.Close()
+	request, err := http.NewRequest("POST", "/", strings.NewReader(string(body.Bytes())))
+	c.Assert(err, check.IsNil)
+	request.Header.Set("Content-Type", "multipart/form-data; boundary="+writer.Boundary())
 	recorder := httptest.NewRecorder()
 	createArchiveHandler(recorder, request)
 	var m map[string]string
@@ -68,26 +71,31 @@ func (Suite) TestCreateArchiveHandler(c *check.C) {
 }
 
 func (Suite) TestCreateArchiveHandlerMissingParams(c *check.C) {
-	path, _ := filepath.Abs("testdata/test.git")
-	body := fmt.Sprintf("path=%s&prefix=sproject", path)
-	request, err := http.NewRequest("POST", "/", strings.NewReader(body))
+	request, err := http.NewRequest("POST", "/", strings.NewReader(""))
 	c.Assert(err, check.IsNil)
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	writer.Close()
+	request.Header.Set("Content-Type", "multipart/form-data; boundary="+writer.Boundary())
 	recorder := httptest.NewRecorder()
 	createArchiveHandler(recorder, request)
 	c.Assert(recorder.Code, check.Equals, http.StatusBadRequest)
-	c.Assert(recorder.Body.String(), check.Equals, "path and refid are required\n")
+	c.Assert(recorder.Body.String(), check.Equals, "missing archive file\n")
 }
 
 func (Suite) TestCreateArchiveHandlerArchiveFailure(c *check.C) {
 	oldDbAddr := databaseAddr
 	databaseAddr = "256.256.256.256:27017"
 	defer func() { databaseAddr = oldDbAddr }()
-	path, _ := filepath.Abs("testdata/test.git")
-	body := fmt.Sprintf("path=%s&refid=e101294022323&prefix=sproject", path)
-	request, err := http.NewRequest("POST", "/", strings.NewReader(body))
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	file, err := writer.CreateFormFile("archive", "app_commit_uuid.tar.gz")
 	c.Assert(err, check.IsNil)
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	file.Write([]byte("hello world!"))
+	writer.Close()
+	request, err := http.NewRequest("POST", "/", strings.NewReader(string(body.Bytes())))
+	c.Assert(err, check.IsNil)
+	request.Header.Set("Content-Type", "multipart/form-data; boundary="+writer.Boundary())
 	recorder := httptest.NewRecorder()
 	createArchiveHandler(recorder, request)
 	c.Assert(recorder.Code, check.Equals, http.StatusInternalServerError)
