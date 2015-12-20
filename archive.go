@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/sha512"
 	"errors"
@@ -12,7 +13,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"gopkg.in/mgo.v2"
@@ -92,6 +95,32 @@ func NewArchive(archiveFile io.ReadCloser, name, baseDir string) (*Archive, erro
 	return &archive, nil
 }
 
+// LegacyArchive inserts a new archive in the database and starts the generation
+// of the actual archive in background. It exists for backward compatibility
+// reasons, and will be removed in the future.
+func LegacyArchive(path, refid, baseDir, prefix string) (*Archive, error) {
+	now := time.Now()
+	archive := Archive{
+		ID:        newID(path),
+		Status:    StatusBuilding,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	log.Printf("[INFO] Generating archive %q for the path %q at reference %q", archive.ID, path, refid)
+	archive.Path = filepath.Join(baseDir, archive.ID+".tar.gz")
+	db, err := conn()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+	err = db.Collection(collectionName).Insert(archive)
+	if err != nil {
+		return nil, err
+	}
+	go archive.generate(path, refid, archive.Path, prefix)
+	return &archive, nil
+}
+
 func (archive Archive) saveArchive(archiveFile io.ReadCloser, archivePath string) {
 	db, err := conn()
 	if err != nil {
@@ -107,6 +136,33 @@ func (archive Archive) saveArchive(archiveFile io.ReadCloser, archivePath string
 	defer f.Close()
 	defer archiveFile.Close()
 	io.Copy(f, archiveFile)
+	update := bson.M{"$set": bson.M{"status": status, "log": archive.Log, "updatedat": time.Now()}}
+	db.Collection(collectionName).UpdateId(archive.ID, update)
+}
+
+func (archive Archive) generate(repositoryPath, refid, archivePath, prefix string) {
+	db, err := conn()
+	if err != nil {
+		return
+	}
+	defer db.Close()
+	status := StatusReady
+	if !strings.HasSuffix(prefix, "/") {
+		prefix += "/"
+	}
+	var buf bytes.Buffer
+	command := exec.Command(
+		"git", "archive", "--format=tar.gz",
+		"--output="+archivePath, "--prefix="+prefix, refid,
+	)
+	command.Dir = repositoryPath
+	command.Stdout = &buf
+	command.Stderr = &buf
+	if err := command.Run(); err != nil {
+		status = StatusError
+		log.Printf("[ERROR] Failed to generate archive %q: %s", archive.ID, buf.String())
+	}
+	archive.Log = buf.String()
 	update := bson.M{"$set": bson.M{"status": status, "log": archive.Log, "updatedat": time.Now()}}
 	db.Collection(collectionName).UpdateId(archive.ID, update)
 }
