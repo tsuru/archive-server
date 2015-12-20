@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -14,6 +15,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -99,6 +101,21 @@ func (Suite) TestCreateArchiveHandlerArchiveFailure(c *check.C) {
 	recorder := httptest.NewRecorder()
 	createArchiveHandler(recorder, request)
 	c.Assert(recorder.Code, check.Equals, http.StatusInternalServerError)
+}
+
+func (Suite) TestCreateArchiveHandlerLegacy(c *check.C) {
+	path, _ := filepath.Abs("testdata/test.git")
+	body := fmt.Sprintf("path=%s&refid=e101294022323&prefix=sproject", path)
+	request, err := http.NewRequest("POST", "/", strings.NewReader(body))
+	c.Assert(err, check.IsNil)
+	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	recorder := httptest.NewRecorder()
+	createArchiveHandler(recorder, request)
+	var m map[string]string
+	err = json.NewDecoder(recorder.Body).Decode(&m)
+	c.Assert(err, check.IsNil)
+	_, err = GetArchive(m["id"])
+	c.Assert(err, check.IsNil)
 }
 
 func (Suite) TestReadArchiveHandlerStatusReady(c *check.C) {

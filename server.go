@@ -46,7 +46,7 @@ func conn() (*storage.Storage, error) {
 func createArchiveHandler(w http.ResponseWriter, r *http.Request) {
 	archiveFile, header, err := r.FormFile("archive")
 	if err != nil {
-		http.Error(w, "missing archive file", http.StatusBadRequest)
+		legacyCreateArchiveHandler(w, r)
 		return
 	}
 	if archiveFile == nil {
@@ -54,6 +54,25 @@ func createArchiveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	archive, err := NewArchive(archiveFile, header.Filename, baseDir)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	response := map[string]string{"id": archive.ID}
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	json.NewEncoder(w).Encode(response)
+}
+
+func legacyCreateArchiveHandler(w http.ResponseWriter, r *http.Request) {
+	path := r.FormValue("path")
+	refid := r.FormValue("refid")
+	prefix := r.FormValue("prefix")
+	if path == "" || refid == "" {
+		http.Error(w, "missing archive file", http.StatusBadRequest)
+		return
+	}
+	archive, err := LegacyArchive(path, refid, baseDir, prefix)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
