@@ -1,0 +1,51 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"path": "github.com/tsuru/commandmocker",
+			"revision": "be4aec17ebc7264c791bf01709bfd956475d2ee8",
+			"revisionTime": "2015-07-17T10:58:58-03:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/db/storage",
+			"revision": "f0bfa8e747315ab4e18d6af9c90f5969caaa05a1",
+			"revisionTime": "2016-01-06T20:16:19-02:00"
+		},
+		{
+			"path": "golang.org/x/net/netutil",
+			"revision": "6dc0abcce25682504770fa9a7a6705bbfdebfa48",
+			"revisionTime": "2015-02-24T17:42:36+11:00"
+		},
+		{
+			"path": "gopkg.in/check.v1",
+			"revision": "64131543e7896d5bcc6bd5a76287eb75ea96c673",
+			"revisionTime": "2014-10-24T11:38:53-02:00"
+		},
+		{
+			"path": "gopkg.in/mgo.v2",
+			"revision": "f4923a569136442e900b8cf5c1a706c0a8b0883c",
+			"revisionTime": "2015-08-21T12:30:02-03:00"
+		},
+		{
+			"path": "gopkg.in/mgo.v2/bson",
+			"revision": "f4923a569136442e900b8cf5c1a706c0a8b0883c",
+			"revisionTime": "2015-08-21T12:30:02-03:00"
+		},
+		{
+			"path": "gopkg.in/mgo.v2/internal/sasl",
+			"revision": "f4923a569136442e900b8cf5c1a706c0a8b0883c",
+			"revisionTime": "2015-08-21T12:30:02-03:00"
+		},
+		{
+			"path": "gopkg.in/mgo.v2/internal/scram",
+			"revision": "f4923a569136442e900b8cf5c1a706c0a8b0883c",
+			"revisionTime": "2015-08-21T12:30:02-03:00"
+		},
+		{
+			"path": "gopkg.in/tylerb/graceful.v1",
+			"revision": "d506b859c378b0e4a1b16d44021f3937f9ba4578",
+			"revisionTime": "2015-03-29T10:11:00-06:00"
+		}
+	]
+}
