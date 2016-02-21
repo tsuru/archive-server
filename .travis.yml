@@ -1,4 +1,5 @@
 language: go
+install: true
 sudo: false
 go:
   - 1.5.3
