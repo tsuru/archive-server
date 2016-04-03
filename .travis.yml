@@ -2,14 +2,10 @@ language: go
 install: true
 sudo: false
 go:
-  - 1.5.3
   - 1.6
   - tip
 env:
-  global:
-    - GO15VENDOREXPERIMENT=1
   matrix:
-    - GOARCH=386
     - GOARCH=amd64
 script:
   - go test -x
