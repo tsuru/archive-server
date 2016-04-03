@@ -4,4 +4,6 @@
 
 FROM alpine:3.2
 ADD archive-server /bin/archive-server
-ENTRYPOINT ["/bin/archive-server"]
+
+EXPOSE 6161 6060
+ENTRYPOINT ["/bin/archive-server", "-read-http=0.0.0.0:6060", "-write-http=0.0.0.0:6161"]
