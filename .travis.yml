@@ -9,5 +9,6 @@ env:
     - GOARCH=amd64
 script:
   - go test -x
+  - go build -ldflags "-linkmode external -extldflags -static"
 services:
   - mongodb
