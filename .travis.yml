@@ -12,7 +12,3 @@ script:
   - go build -ldflags "-linkmode external -extldflags -static"
 services:
   - mongodb
-  - docker
-matrix:
-  allow_failures:
-    - go: tip
