@@ -7,6 +7,9 @@ go:
 env:
   matrix:
     - GOARCH=amd64
+before_script:
+  - sleep 15
+  - mongo mydb_test --eval 'db.addUser("travis", "test");'
 script:
   - go test -x
   - go build -ldflags "-linkmode external -extldflags -static"
