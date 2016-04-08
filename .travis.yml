@@ -10,12 +10,8 @@ env:
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y mongodb
-before_script:
-  - sleep 15
-  - mongo mydb_test --eval 'db.addUser("travis", "test");'
 script:
   - go test -x
   - go build -ldflags "-linkmode external -extldflags -static"
 services:
-  - mongodb
   - docker
