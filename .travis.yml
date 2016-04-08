@@ -1,6 +1,6 @@
 language: go
 install: true
-sudo: false
+sudo: required
 go:
   - 1.6
   - tip
