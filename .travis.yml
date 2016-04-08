@@ -12,3 +12,4 @@ script:
   - go build -ldflags "-linkmode external -extldflags -static"
 services:
   - mongodb
+  - docker
